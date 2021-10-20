@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+option go_package = "github.com/ThomasHabets/tleservice/pkg/tleproto";
+
+package tleproto;
+
+message TLE {
+  string tle1 = 1;
+  string tle2 = 2;
+}
+
+enum Model {
+  DEFAULT = 0;
+  WGS72 = 1;
+  WGS84 = 2;
+}
+
+message GetInstantRequest {
+  TLE tle = 1;
+  Model model = 2;
+
+  // Time in UT1(?)
+  int64 timestamp = 3;
+
+  LLA observer = 4;
+}
+
+message LLA {
+  double latitude = 1; // degrees
+  double longitude = 2; // degrees
+  double altitude = 3; // km
+
+  double longitude_ew = 4; // convenience -180 to +180
+}
+
+message Vector3 {
+  double x = 1; // km
+  double y = 2; // km
+  double z = 3; // km
+}
+
+message LookAngles {
+  double azimuth = 1; // rad
+  double elevation = 2; // rad
+  double range = 3; // km
+}
+
+message GetInstantResponse {
+  LLA lla = 1;
+  double angular_velocity = 2;
+  Vector3 position = 3;
+  Vector3 position_ecef = 4; // Earth centered Earth fixed. ("final"?)
+  Vector3 velocity = 5;
+  LookAngles look_angles = 6;
+}
+
+service TLEService {
+  rpc GetInstant(GetInstantRequest) returns (GetInstantResponse) {}
+}
