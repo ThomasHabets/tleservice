@@ -31,6 +31,10 @@ $ ./plot/orbit.plot
 $ ./plot/altitude.plot
 ```
 
+![Orbit](plots/orbit.png)
+![Altitude](plots/altitude.png)
+
+
 ## Use cases
 
 * Schedule and aim communication with satellites, such as the amateur radio
