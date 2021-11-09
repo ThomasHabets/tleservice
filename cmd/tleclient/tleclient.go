@@ -31,11 +31,12 @@ var (
 	serverAddr = flag.String("server_addr", "localhost:10000", "The server address in the format of host:port")
 	startTime  = flag.String("time", "2021-10-19 12:07", "Start time to give data for.")
 	getTLE     = flag.Bool("get_tle", false, "Get TLE data from the Internet. Off by default because it requires the server to have a login.")
+	duration   = flag.Duration("duration", time.Hour, "Duration to get data for")
+	period     = flag.Duration("period", time.Minute, "Data periodicity")
 )
 
-func printRange(ctx context.Context, client pb.TLEServiceClient, st time.Time, tle1, tle2 string, seconds, period int) {
-	for i := 0; i < seconds; i += period {
-		ts := st.Add(time.Duration(i) * time.Second)
+func printRange(ctx context.Context, client pb.TLEServiceClient, st time.Time, tle1, tle2 string) {
+	for ts := st; ts.Before(st.Add(*duration)); ts = ts.Add(*period) {
 		resp, err := client.GetInstant(ctx, &pb.GetInstantRequest{
 			Tle: &pb.TLE{
 				Tle1: tle1,
@@ -99,5 +100,5 @@ func main() {
 		log.Fatalf("Failed to parse %q as time: %v", *startTime, err)
 	}
 
-	printRange(ctx, client, st, tle1, tle2, 60*60, 60)
+	printRange(ctx, client, st, tle1, tle2)
 }

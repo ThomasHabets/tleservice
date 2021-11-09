@@ -32,6 +32,8 @@ import (
 
 var (
 	port = flag.Int("port", 10000, "The server port")
+	user = flag.String("user", "", "Username for spacetrack")
+	pass = flag.String("password", "", "Password for spacetrack") // TODO: put in env or something.
 )
 
 func ymd(ts time.Time) (int, int, int, int, int, int) {
@@ -63,19 +65,44 @@ func rad2deg(in float64) float64 {
 	return in * 180.0 / math.Pi
 }
 
+func modelEnumString(m pb.Model) (string, error) {
+	switch m {
+	case pb.Model_DEFAULT, pb.Model_WGS84:
+		return "wgs84", nil
+	case pb.Model_WGS72:
+		return "wgs72", nil
+	default:
+		return "", fmt.Errorf("invalid model")
+	}
+}
+
 type Server struct {
 	pb.UnimplementedTLEServiceServer
+
+	spacetrack *satellite.Spacetrack
+}
+
+func (s *Server) GetTLE(ctx context.Context, req *pb.GetTLERequest) (*pb.GetTLEResponse, error) {
+	m, err := modelEnumString(req.Model)
+	if err != nil {
+		return nil, err
+	}
+	sat, err := s.spacetrack.GetTLE(uint64(req.CatId), time.Now(), m)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetTLEResponse{
+		Tle: &pb.TLE{
+			Tle1: sat.Line1,
+			Tle2: sat.Line2,
+		},
+	}, nil
 }
 
 func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.GetInstantResponse, error) {
-	var model string
-	switch req.Model {
-	case pb.Model_DEFAULT, pb.Model_WGS84:
-		model = "wgs84"
-	case pb.Model_WGS72:
-		model = "wgs72"
-	default:
-		return nil, fmt.Errorf("invalid model")
+	model, err := modelEnumString(req.Model)
+	if err != nil {
+		return nil, err
 	}
 	sat := satellite.TLEToSat(req.Tle.Tle1, req.Tle.Tle2, model)
 	ts := time.Unix(req.Timestamp, 0)
@@ -119,7 +146,7 @@ func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.G
 		AngularVelocity: angularVel,
 	}
 	if req.Observer != nil {
-		fmt.Println(req.Observer.Latitude, req.Observer.Longitude)
+		//fmt.Println(req.Observer.Latitude, req.Observer.Longitude)
 		ang := satellite.ECIToLookAngles(pos, satellite.LatLong{
 			//Latitude:  latlong.Latitude,
 			Latitude: deg2rad(req.Observer.Latitude),
@@ -139,11 +166,13 @@ func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.G
 func main() {
 	flag.Parse()
 
-	srv := Server{}
+	srv := Server{
+		spacetrack: satellite.NewSpacetrack(*user, *pass),
+	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("Failed to listen: %v", err)
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)

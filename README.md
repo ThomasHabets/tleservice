@@ -16,26 +16,20 @@ object right now?"
 Start the server:
 
 ```
-go run ./cmd/tleserver/
+$ go run ./cmd/tleserver/
 ```
 
 Example client gets the lat/long/alt of the ISS in the next 10 minutes:
 
-```
-./tleclient  | awk '{print $1 " " $2 " " $3}' | head -10
--15.75 36.00 426.39
--12.76 38.30 425.58
--9.74 40.54 424.85
--6.71 42.74 424.19
--3.66 44.91 423.61
--0.61 47.07 423.12
-2.44 49.22 422.72
-5.50 51.38 422.42
-8.54 53.57 422.20
-11.56 55.79 422.08
-```
-
 (the TLE data for the ISS is currently hardcoded in the client)
+
+```
+$ ./tleclient  | tee orbit.dat
+
+[… lots of data …]
+$ ./plot/orbit.plot
+$ ./plot/altitude.plot
+```
 
 ## Use cases
 
