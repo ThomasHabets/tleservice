@@ -43,3 +43,6 @@ Example client gets the lat/long/alt of the ISS in the next 10 minutes:
   repeaters on the ISS.
 * Know where in the sky to look, and when, to see the ISS go by.
 * Make beautiful 2D and 3D plots of orbits.
+
+
+[tle]: https://en.wikipedia.org/wiki/Two-line_element_set
