@@ -16,7 +16,7 @@ object right now?"
 Start the server:
 
 ```
-./tleserver
+go run ./cmd/tleserver/
 ```
 
 Example client gets the lat/long/alt of the ISS in the next 10 minutes:

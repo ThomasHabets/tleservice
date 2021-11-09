@@ -29,86 +29,75 @@ import (
 
 var (
 	serverAddr = flag.String("server_addr", "localhost:10000", "The server address in the format of host:port")
+	startTime  = flag.String("time", "2021-10-19 12:07", "Start time to give data for.")
+	getTLE     = flag.Bool("get_tle", false, "Get TLE data from the Internet. Off by default because it requires the server to have a login.")
 )
 
-func main() {
-	flag.Parse()
-
-	//tle1 := "1 25544U 98067A   21290.96791059  .00007152  00000-0  13913-3 0  9995"
-	//tle2 := "2 25544  51.6432  95.6210 0004029 117.2302  27.3327 15.48732973307628"
-	tle1 := "1 25544U 98067A   21307.55056576  .00006301  00000-0  12281-3 0  9999"
-	tle2 := "2 25544  51.6446  13.6218 0003585 168.4944 336.9654 15.48910556310190"
-	// models: wgs72, wgs84, wgs72old
-
-	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("fail to dial: %v", err)
-	}
-	defer conn.Close()
-	client := pb.NewTLEServiceClient(conn)
-	ctx := context.Background()
-	st := time.Now()
-	if true {
-		for i := 0; i < 180; i++ {
-			ts := st.Add(time.Duration(i) * time.Minute)
-			resp, err := client.GetInstant(ctx, &pb.GetInstantRequest{
-				Tle: &pb.TLE{
-					Tle1: tle1,
-					Tle2: tle2,
-				},
-				Observer: &pb.LLA{
-					Latitude:  51.76,
-					Longitude: 0,
-					Altitude:  0,
-				},
-				Timestamp: ts.Unix(),
-			})
-			if err != nil {
-				log.Fatalf("Failed to RPC: %v", err)
-			}
-			if true {
-				fmt.Printf("%.2f %.2f %.2f"+
-					" %.2f %.2f %.2f"+
-					" %.2f %.2f %.2f"+
-					" %.2f %.2f %.2f"+
-					" %.2f %.2f %.2f"+
-					" %.2f"+
-					"\n",
-					resp.Lla.Latitude, resp.Lla.LongitudeEw, resp.Lla.Altitude,
-					resp.Position.X, resp.Position.Y, resp.Position.Z,
-					resp.PositionEcef.X, resp.PositionEcef.Y, resp.PositionEcef.Z,
-					resp.Velocity.X, resp.Velocity.Y, resp.Velocity.Z,
-					resp.LookAngles.Azimuth, resp.LookAngles.Elevation, resp.LookAngles.Range,
-					resp.AngularVelocity,
-				)
-			} else {
-				fmt.Printf("%.2f %.2f %.2f\n",
-					resp.LookAngles.Azimuth, resp.LookAngles.Elevation, resp.LookAngles.Range,
-				)
-			}
-		}
-	} else {
-		ts := time.Now()
-		ts, err := time.Parse("2006-01-02 15:04:05", "2021-10-20 09:51:06")
-		if err != nil {
-			log.Fatalf("Failed to parse timestamp: %v", err)
-		}
+func printRange(ctx context.Context, client pb.TLEServiceClient, st time.Time, tle1, tle2 string, seconds, period int) {
+	for i := 0; i < seconds; i += period {
+		ts := st.Add(time.Duration(i) * time.Second)
 		resp, err := client.GetInstant(ctx, &pb.GetInstantRequest{
 			Tle: &pb.TLE{
 				Tle1: tle1,
 				Tle2: tle2,
 			},
-			Timestamp: ts.Unix(),
 			Observer: &pb.LLA{
 				Latitude:  51.76,
 				Longitude: 0,
 				Altitude:  0,
 			},
+			Timestamp: ts.Unix(),
 		})
 		if err != nil {
 			log.Fatalf("Failed to RPC: %v", err)
 		}
-		fmt.Printf("%.2f %.2f %.2f\n", resp.Lla.Latitude, resp.Lla.LongitudeEw, resp.Lla.Altitude)
-		fmt.Printf("%.2f %.2f %.2f\n", resp.LookAngles.Azimuth, resp.LookAngles.Elevation, resp.LookAngles.Range)
+		fmt.Printf("%.2f %.2f %.2f"+
+			" %.2f %.2f %.2f"+
+			" %.2f %.2f %.2f"+
+			" %.2f %.2f %.2f"+
+			" %.2f %.2f %.2f"+
+			" %.2f"+
+			"\n",
+			resp.Lla.Latitude, resp.Lla.LongitudeEw, resp.Lla.Altitude,
+			resp.Position.X, resp.Position.Y, resp.Position.Z,
+			resp.PositionEcef.X, resp.PositionEcef.Y, resp.PositionEcef.Z,
+			resp.Velocity.X, resp.Velocity.Y, resp.Velocity.Z,
+			resp.LookAngles.Azimuth, resp.LookAngles.Elevation, resp.LookAngles.Range,
+			resp.AngularVelocity,
+		)
 	}
+}
+
+func main() {
+	flag.Parse()
+
+	// TLE data for the ISS. By the time you read this it'll be old, though.
+	tle1 := "1 25544U 98067A   21307.55056576  .00006301  00000-0  12281-3 0  9999"
+	tle2 := "2 25544  51.6446  13.6218 0003585 168.4944 336.9654 15.48910556310190"
+
+	// Connect to server.
+	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to dial: %v", err)
+	}
+	defer conn.Close()
+
+	client := pb.NewTLEServiceClient(conn)
+	ctx := context.Background()
+
+	if *getTLE {
+		resp, err := client.GetTLE(ctx, &pb.GetTLERequest{CatId: 25544})
+		if err != nil {
+			log.Fatal(err)
+		}
+		tle1 = resp.Tle.Tle1
+		tle2 = resp.Tle.Tle2
+	}
+
+	st, err := time.Parse("2006-01-02 15:04", *startTime)
+	if err != nil {
+		log.Fatalf("Failed to parse %q as time: %v", *startTime, err)
+	}
+
+	printRange(ctx, client, st, tle1, tle2, 60*60, 60)
 }
