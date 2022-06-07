@@ -69,6 +69,16 @@ message GetInstantResponse {
   LookAngles look_angles = 6;
 }
 
+message GetTLERequest {
+  int32 cat_id = 1;
+  Model model = 2;
+}
+
+message GetTLEResponse {
+	TLE tle = 1;
+}
+
 service TLEService {
   rpc GetInstant(GetInstantRequest) returns (GetInstantResponse) {}
+  rpc GetTLE(GetTLERequest) returns (GetTLEResponse) {}
 }
