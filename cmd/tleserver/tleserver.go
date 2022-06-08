@@ -38,9 +38,7 @@ var (
 
 func ymd(ts time.Time) (int, int, int, int, int, int) {
 	ts = ts.UTC()
-	y, mm, d := ts.Date()
-	h, m, s := ts.Hour(), ts.Minute(), ts.Second()
-	return y, int(mm), d, h, m, s
+	return ts.Year(), int(ts.Month()), ts.Day(), ts.Hour(), ts.Minute(), ts.Second()
 }
 
 func gstimeFromDate(ts time.Time) float64 {
@@ -104,6 +102,7 @@ func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.G
 	if err != nil {
 		return nil, err
 	}
+
 	sat := satellite.TLEToSat(req.Tle.Tle1, req.Tle.Tle2, model)
 	ts := time.Unix(req.Timestamp, 0)
 	y, mm, d, h, m, s := ymd(ts)
@@ -111,10 +110,10 @@ func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.G
 	jday := satellite.JDay(y, mm, d, h, m, s)
 	pos, vel := satellite.Propagate(sat, y, mm, d, h, m, s)
 
-	gmst := satellite.GSTimeFromDate(ymd(ts))
-	ecef := satellite.ECIToECEF(pos, gmst)
+	gst := satellite.GSTimeFromDate(ymd(ts))
+	ecef := satellite.ECIToECEF(pos, gst)
 
-	alt, angularVel, latlong := satellite.ECIToLLA(pos, gmst)
+	alt, angularVel, latlong := satellite.ECIToLLA(pos, gst)
 	lng := fixLong(latlong.Longitude)
 	resp := &pb.GetInstantResponse{
 		Lla: &pb.LLA{
@@ -146,13 +145,11 @@ func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.G
 		AngularVelocity: angularVel,
 	}
 	if req.Observer != nil {
-		//fmt.Println(req.Observer.Latitude, req.Observer.Longitude)
-		ang := satellite.ECIToLookAngles(pos, satellite.LatLong{
-			//Latitude:  latlong.Latitude,
-			Latitude: deg2rad(req.Observer.Latitude),
-			//Longitude: latlong.Longitude,
+		obsPos := satellite.LatLong{
+			Latitude:  deg2rad(req.Observer.Latitude),
 			Longitude: deg2rad(req.Observer.Longitude),
-		}, req.Observer.Altitude, jday-2451545.0)
+		}
+		ang := satellite.ECIToLookAngles(pos, obsPos, req.Observer.Altitude, jday)
 		resp.LookAngles = &pb.LookAngles{
 			Azimuth:   rad2deg(ang.Az),
 			Elevation: rad2deg(ang.El),

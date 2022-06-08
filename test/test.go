@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// Test case 2. gpredict says az 215.26, elevation 22.24.
-	if false {
+	if true {
 		// 2022-06-07 16:57
 		tle1 = "1 25544U 98067A   22158.15063898  .00006400  00000+0  12044-3 0  9991"
 		tle2 = "2 25544  51.6454  26.3008 0004489 203.5655 299.2429 15.49899681343622"
@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Test case 3. gpredict says az 201.14, el 21.49.
-	if true {
+	if false {
 		// 2022-06-07 16:57
 		tle1 = "1 25544U 98067A   22158.15063898  .00006400  00000+0  12044-3 0  9991"
 		tle2 = "2 25544  51.6454  26.3008 0004489 203.5655 299.2429 15.49899681343622"
@@ -85,6 +85,11 @@ func main() {
 	_, _, latlng := satellite.ECIToLLA(position, gst)
 	// declare my current location, altitude
 	// get my observation angles in radian
+	if false {
+		fmt.Println(position)
+		fmt.Println(location)
+		fmt.Println(altitude)
+	}
 	obs := satellite.ECIToLookAngles(
 		position, location, altitude,
 		// get Julian date
@@ -94,7 +99,7 @@ func main() {
 		),
 	)
 	// print satellite coordinates in angles
-	fmt.Printf("Sat pos: %.2f %.2f\n", latlng.Latitude*180/math.Pi, latlng.Longitude*180/math.Pi)
+	fmt.Printf("Sat pos: %f %f\n", latlng.Latitude*180/math.Pi, latlng.Longitude*180/math.Pi)
 	// print my observation azimuth in angle
 	fmt.Printf("Azimuth:  %.2f\n", obs.Az*180/math.Pi)
 	fmt.Printf("Elevation %.2f\n", obs.El*180/math.Pi)

@@ -43,22 +43,24 @@ func printRange(ctx context.Context, client pb.TLEServiceClient, st time.Time, t
 				Tle2: tle2,
 			},
 			Observer: &pb.LLA{
-				Latitude:  51.76,
-				Longitude: 0,
-				Altitude:  0,
+				Latitude:  51.4375,
+				Longitude: 0.1250,
+				Altitude:  48,
 			},
+			// Model: pb.Model_WGS72,
 			Timestamp: ts.Unix(),
 		})
 		if err != nil {
 			log.Fatalf("Failed to RPC: %v", err)
 		}
-		fmt.Printf("%.2f %.2f %.2f"+
-			" %.2f %.2f %.2f"+
-			" %.2f %.2f %.2f"+
-			" %.2f %.2f %.2f"+
-			" %.2f %.2f %.2f"+
+		fmt.Printf("%v deg=(%.2f %.2f) alt=%.2f"+
+			" xyz=(%.2f %.2f %.2f)"+
+			" ecef=(%.2f %.2f %.2f)"+
+			" vel=(%.2f %.2f %.2f)"+
+			" azimuth=%.2f elevation=%.2f range=%.2f"+
 			" %.2f"+
 			"\n",
+			ts,
 			resp.Lla.Latitude, resp.Lla.LongitudeEw, resp.Lla.Altitude,
 			resp.Position.X, resp.Position.Y, resp.Position.Z,
 			resp.PositionEcef.X, resp.PositionEcef.Y, resp.PositionEcef.Z,
@@ -75,6 +77,10 @@ func main() {
 	// TLE data for the ISS. By the time you read this it'll be old, though.
 	tle1 := "1 25544U 98067A   21307.55056576  .00006301  00000-0  12281-3 0  9999"
 	tle2 := "2 25544  51.6446  13.6218 0003585 168.4944 336.9654 15.48910556310190"
+
+	// 2022-06-07 16:57
+	tle1 = "1 25544U 98067A   22158.15063898  .00006400  00000+0  12044-3 0  9991"
+	tle2 = "2 25544  51.6454  26.3008 0004489 203.5655 299.2429 15.49899681343622"
 
 	// Connect to server.
 	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
@@ -95,7 +101,7 @@ func main() {
 		tle2 = resp.Tle.Tle2
 	}
 
-	st, err := time.Parse("2006-01-02 15:04", *startTime)
+	st, err := time.Parse("2006-01-02 15:04:05", *startTime)
 	if err != nil {
 		log.Fatalf("Failed to parse %q as time: %v", *startTime, err)
 	}
