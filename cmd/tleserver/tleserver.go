@@ -104,60 +104,64 @@ func (*Server) GetInstant(ctx context.Context, req *pb.GetInstantRequest) (*pb.G
 	}
 
 	sat := satellite.TLEToSat(req.Tle.Tle1, req.Tle.Tle2, model)
-	ts := time.Unix(req.Timestamp, 0)
-	y, mm, d, h, m, s := ymd(ts)
+	resp := pb.GetInstantResponse{}
+	for _, timepoint := range req.Timestamp {
+		ts := time.Unix(timepoint, 0)
+		y, mm, d, h, m, s := ymd(ts)
 
-	jday := satellite.JDay(y, mm, d, h, m, s)
-	pos, vel := satellite.Propagate(sat, y, mm, d, h, m, s)
+		jday := satellite.JDay(y, mm, d, h, m, s)
+		pos, vel := satellite.Propagate(sat, y, mm, d, h, m, s)
 
-	gst := satellite.GSTimeFromDate(ymd(ts))
-	ecef := satellite.ECIToECEF(pos, gst)
+		gst := satellite.GSTimeFromDate(ymd(ts))
+		ecef := satellite.ECIToECEF(pos, gst)
 
-	alt, angularVel, latlong := satellite.ECIToLLA(pos, gst)
-	lng := fixLong(latlong.Longitude)
-	resp := &pb.GetInstantResponse{
-		Lla: &pb.LLA{
-			Latitude:  rad2deg(latlong.Latitude),
-			Longitude: lng,
-			LongitudeEw: func() float64 {
-				if lng > 180 {
-					return lng - 360
-				}
-				return lng
-			}(),
-			Altitude: alt,
-		},
-		Position: &pb.Vector3{
-			X: pos.X,
-			Y: pos.Y,
-			Z: pos.Z,
-		},
-		PositionEcef: &pb.Vector3{
-			X: ecef.X,
-			Y: ecef.Y,
-			Z: ecef.Z,
-		},
-		Velocity: &pb.Vector3{
-			X: vel.X,
-			Y: vel.Y,
-			Z: vel.Z,
-		},
-		AngularVelocity: angularVel,
-	}
-	if req.Observer != nil {
-		obsPos := satellite.LatLong{
-			Latitude:  deg2rad(req.Observer.Latitude),
-			Longitude: deg2rad(req.Observer.Longitude),
+		alt, angularVel, latlong := satellite.ECIToLLA(pos, gst)
+		lng := fixLong(latlong.Longitude)
+		data := &pb.InstantData{
+			Timestamp: timepoint,
+			Lla: &pb.LLA{
+				Latitude:  rad2deg(latlong.Latitude),
+				Longitude: lng,
+				LongitudeEw: func() float64 {
+					if lng > 180 {
+						return lng - 360
+					}
+					return lng
+				}(),
+				Altitude: alt,
+			},
+			Position: &pb.Vector3{
+				X: pos.X,
+				Y: pos.Y,
+				Z: pos.Z,
+			},
+			PositionEcef: &pb.Vector3{
+				X: ecef.X,
+				Y: ecef.Y,
+				Z: ecef.Z,
+			},
+			Velocity: &pb.Vector3{
+				X: vel.X,
+				Y: vel.Y,
+				Z: vel.Z,
+			},
+			AngularVelocity: angularVel,
 		}
-		ang := satellite.ECIToLookAngles(pos, obsPos, req.Observer.Altitude, jday)
-		resp.LookAngles = &pb.LookAngles{
-			Azimuth:   rad2deg(ang.Az),
-			Elevation: rad2deg(ang.El),
-			Range:     ang.Rg,
+		if req.Observer != nil {
+			obsPos := satellite.LatLong{
+				Latitude:  deg2rad(req.Observer.Latitude),
+				Longitude: deg2rad(req.Observer.Longitude),
+			}
+			ang := satellite.ECIToLookAngles(pos, obsPos, req.Observer.Altitude, jday)
+			data.LookAngles = &pb.LookAngles{
+				Azimuth:   rad2deg(ang.Az),
+				Elevation: rad2deg(ang.El),
+				Range:     ang.Rg,
+			}
 		}
+		resp.Instant = append(resp.Instant, data)
 	}
-
-	return resp, nil
+	return &resp, nil
 }
 
 func main() {

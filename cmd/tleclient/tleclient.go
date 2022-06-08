@@ -36,23 +36,29 @@ var (
 )
 
 func printRange(ctx context.Context, client pb.TLEServiceClient, st time.Time, tle1, tle2 string) {
+	var tss []int64
 	for ts := st; ts.Before(st.Add(*duration)); ts = ts.Add(*period) {
-		resp, err := client.GetInstant(ctx, &pb.GetInstantRequest{
-			Tle: &pb.TLE{
-				Tle1: tle1,
-				Tle2: tle2,
-			},
-			Observer: &pb.LLA{
-				Latitude:  51.4375,
-				Longitude: 0.1250,
-				Altitude:  48,
-			},
-			// Model: pb.Model_WGS72,
-			Timestamp: ts.Unix(),
-		})
-		if err != nil {
-			log.Fatalf("Failed to RPC: %v", err)
-		}
+		tss = append(tss, ts.Unix())
+	}
+
+	resps, err := client.GetInstant(ctx, &pb.GetInstantRequest{
+		Tle: &pb.TLE{
+			Tle1: tle1,
+			Tle2: tle2,
+		},
+		Observer: &pb.LLA{
+			Latitude:  51.4375,
+			Longitude: 0.1250,
+			Altitude:  48,
+		},
+		// Model: pb.Model_WGS72,
+		Timestamp: tss,
+	})
+	if err != nil {
+		log.Fatalf("Failed to RPC: %v", err)
+	}
+
+	for _, resp := range resps.Instant {
 		fmt.Printf("%v deg=(%.2f %.2f) alt=%.2f"+
 			" xyz=(%.2f %.2f %.2f)"+
 			" ecef=(%.2f %.2f %.2f)"+
@@ -60,7 +66,7 @@ func printRange(ctx context.Context, client pb.TLEServiceClient, st time.Time, t
 			" azimuth=%.2f elevation=%.2f range=%.2f"+
 			" %.2f"+
 			"\n",
-			ts,
+			time.Unix(resp.Timestamp, 0),
 			resp.Lla.Latitude, resp.Lla.LongitudeEw, resp.Lla.Altitude,
 			resp.Position.X, resp.Position.Y, resp.Position.Z,
 			resp.PositionEcef.X, resp.PositionEcef.Y, resp.PositionEcef.Z,

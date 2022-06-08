@@ -35,7 +35,7 @@ message GetInstantRequest {
   Model model = 2;
 
   // Time in UT1(?)
-  int64 timestamp = 3;
+  repeated int64 timestamp = 3;
 
   LLA observer = 4;
 }
@@ -60,13 +60,18 @@ message LookAngles {
   double range = 3; // km
 }
 
+message InstantData {
+  int64 timestamp = 1;
+  LLA lla = 2;
+  double angular_velocity = 3;
+  Vector3 position = 4;
+  Vector3 position_ecef = 5; // Earth centered Earth fixed. ("final"?)
+  Vector3 velocity = 6;
+  LookAngles look_angles = 7;
+}
+
 message GetInstantResponse {
-  LLA lla = 1;
-  double angular_velocity = 2;
-  Vector3 position = 3;
-  Vector3 position_ecef = 4; // Earth centered Earth fixed. ("final"?)
-  Vector3 velocity = 5;
-  LookAngles look_angles = 6;
+  repeated InstantData instant = 1;
 }
 
 message GetTLERequest {
