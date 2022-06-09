@@ -42,6 +42,11 @@ $ ./plot/altitude.plot
 ![Orbit](plots/orbit.png)
 ![Altitude](plots/altitude.png)
 
+And with some simple processing:
+
+![Polar pass plot](plots/polar.webp)
+
+
 
 ## Use cases
 
