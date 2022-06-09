@@ -18,7 +18,8 @@ object right now?"
 ```
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
-PATH=$PATH:~/go/bin protoc --proto_path=proto --go_out=pkg/proto --go-grpc_out=pkg/proto --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative  proto/tle.proto
+# install protoc-gen-grpc-web from https://github.com/grpc/grpc-web/releases
+./genprotos.sh
 ```
 
 Start the server:
