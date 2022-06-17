@@ -12,7 +12,9 @@ set angles degrees
 set size square
 set theta clockwise top
 set rrange [90:0]
-set grid polar 30
+set style line 12 lc rgb 'grey' lt 1 lw 1
+set style line 13 lc rgb 'blue' lt 1 lw 2
+set grid polar 30 ls 12
 unset ytics
 unset xtics
 set ttics add ("N" 0, "E" 90, "S" 180, "W" -90) font ":Bold"
@@ -23,4 +25,4 @@ unset border
 set border polar
 set style data lines
 
-plot '../pass' w l title ''
+plot '../pass' w l title '' ls 13
