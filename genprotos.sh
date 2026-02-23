@@ -11,6 +11,6 @@ exec protoc \
     --go-grpc_out=pkg/proto \
     --go-grpc_opt=paths=source_relative \
     --go_opt=paths=source_relative \
-    --js_out=js \
-    --grpc-web_out=import_style=commonjs,mode=grpcwebtext:js/ \
     proto/tle.proto 
+    --js_out=mode=binary:./gen \
+    --grpc-web_out=import_style=commonjs,mode=grpcwebtext:js/ \

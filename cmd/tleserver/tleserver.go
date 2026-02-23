@@ -63,12 +63,12 @@ func rad2deg(in float64) float64 {
 	return in * 180.0 / math.Pi
 }
 
-func modelEnumString(m pb.Model) (string, error) {
+func modelEnumString(m pb.Model) (satellite.Gravity, error) {
 	switch m {
 	case pb.Model_DEFAULT, pb.Model_WGS84:
-		return "wgs84", nil
+		return satellite.GravityWGS84, nil
 	case pb.Model_WGS72:
-		return "wgs72", nil
+		return satellite.GravityWGS72, nil
 	default:
 		return "", fmt.Errorf("invalid model")
 	}
